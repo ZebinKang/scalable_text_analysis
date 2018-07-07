@@ -1,5 +1,4 @@
 .DS_Store
-*.ipynb
 *.xml
 *.pyc
 test/
