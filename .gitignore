@@ -1,0 +1,11 @@
+.DS_Store
+*.ipynb
+*.xml
+*.pyc
+test/
+*.zip
+*.h5
+*.txt
+*.json
+.idea/
+metastore_db/
