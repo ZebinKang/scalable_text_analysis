@@ -1,0 +1,1 @@
+python ../src/predict.py -d ~/sample/test_txt/ -m ~/sample/model/model-f=sg-a=Calibrate.pkl -p ctakes -q ~/CTAKES_HOME/
