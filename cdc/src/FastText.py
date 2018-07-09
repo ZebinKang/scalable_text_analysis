@@ -58,7 +58,7 @@ def text_to_numbers(sentences, word_dict):
 
 def build_embedding(embedding_file):
     embeddings_index = {}
-    f = open(embedding_file)
+    f = open(embedding_file, encoding="utf-8")
     for line in f:
         values = line.split()
         word = values[0]
