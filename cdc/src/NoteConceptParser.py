@@ -31,13 +31,13 @@ Created : 10/21/2016
 
 import sys, os, time
 import subprocess
-import commands
+import subprocess
 import string
 import pandas as pd
 
 
 def SetupCtakes(parserdir, utsname, utspw, ctakesminmem, ctakesmaxmem):
-    print "cTAKES setup"
+    print("cTAKES setup")
     cwd = os.getcwd()
     os.chdir(parserdir + "bin/")    
     os.system("sed '45d' runctakesCPE.sh > pipeline.sh")
@@ -55,7 +55,7 @@ def SetupCtakes(parserdir, utsname, utspw, ctakesminmem, ctakesmaxmem):
 
 
 def RunCtakes(folder, ctakesDir, erisOne):
-    print "Running cTAKES"
+    print("Running cTAKES")
     t = time.time()
     os.chdir(folder)
     try:
@@ -91,22 +91,22 @@ def RunCtakes(folder, ctakesDir, erisOne):
         eris = "bsub -q big -n 4 -R 'rusage[mem=8000]' < eris.lsf"
         subprocess.check_output(['bash', '-c', eris])
     else:
-        print cmd
-        print os.getcwd()
-        print "cTAKES parsing"
+        print(cmd)
+        print(os.getcwd())
+        print("cTAKES parsing")
         os.system(cmd)
         os.chdir(folder + "/ctakes/note_input/")    
         subprocess.check_output(['bash', '-c', 'find . -name "*.res" -exec mv {} ' + folder + '/deid/ \;'])
         os.chdir(folder + "/ctakes/note_output/")
-        print os.getcwd()
+        print(os.getcwd())
         subprocess.check_output(['bash', '-c', 'find . -name "*.xml" -exec mv {} ' + folder + '/xml/ \;'])
         os.chdir(folder)
-        subprocess.check_output(['bash', '-c', "rm -rf ctakes/"])    
-    print time.time() - t
+        subprocess.check_output(['bash', '-c', "rm -rf ctakes/"])
+    print(time.time() - t)
 
 
 def RunMetaMap(folder, mmapDir, erisOne, threshold=0, wsd=True, semantic=False, cui=False):
-    print "Running MetaMap"
+    print("Running MetaMap")
     os.chdir(mmapDir)
     os.system("./skrmedpostctl start; ./wsdserverctl start")
     
@@ -115,7 +115,7 @@ def RunMetaMap(folder, mmapDir, erisOne, threshold=0, wsd=True, semantic=False, 
     fileList = [f for f in os.listdir(folder) if f.endswith(".res")]
     res = {}
     for f in range(0, len(fileList)-1):
-        print f
+        print(f)
         note = open(fileList[f], 'r').read()
         note = note.split('\r\n')
         tmp = []
@@ -141,4 +141,4 @@ def RunMetaMap(folder, mmapDir, erisOne, threshold=0, wsd=True, semantic=False, 
                 
     df = pd.DataFrame(res.items(), columns= ['fileName', 'metamap'])
     df.to_csv('metamap_parsed.txt', sep='\t')
-    print time.time() - t
+    print(time.time() - t)

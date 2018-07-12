@@ -31,18 +31,18 @@ Created : 10/21/2016
 
 import sys, os, time
 import subprocess
-import commands
+import subprocess
 import string
 import pandas as pd
 
 
 def RunDeid(folder, deidDir, rpdr=False, erisOne=False):
-    print "Copying deid program into folders"
+    print("Copying deid program into folders")
     cwd = os.getcwd()
     os.system("cp -r " + deidDir + "/* " + folder)
     #subprocess.check_output(['bash', '-c', cmd])
 
-    print "Executing deid"
+    print("Executing deid")
     if rpdr:
         cmd = "for file in *.txt; do sed 1,2d \"${file}\" > temp && mv temp \"${file}\"; echo '\r\nSTART_OF_RECORD=1||||1||||' | cat - \"$file\" > temp && mv temp \"$file\"; echo '||||END_OF_RECORD\r\n' >> \"$file\"; mv -- \"${file}\" \"${file}.text\"; perl deid.pl \"${file%%.txt.text}\" deid-output.config; sed 's/\[\*\*.*\*\*\]//g' \"${file}.res\" > temp && mv temp \"${file}.res\"; done"
     else:

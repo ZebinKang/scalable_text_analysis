@@ -30,30 +30,30 @@ Created : 10/25/2016
 '''
 
 import os, sys, getopt, re
-import cPickle
+import psutil
 from psutil import virtual_memory
-from NoteDeid import *
-from NoteConceptParser import *
-from Converter import *
-from MLPipeline import *
-from D2v import *
+from cdc.src.NoteDeid import *
+from cdc.src.NoteConceptParser import *
+from cdc.src.Converter import *
+from cdc.src.MLPipeline import *
+from cdc.src.D2v import *
 
 
-def main(argv):    
-    mem = virtual_memory().total / 1024.**3
-    
+def main(argv):
+    mem = virtual_memory().total / 1024. ** 3
+
     datadir = parser = parserdir = model_file = ''
-    
+
     try:
         opts, args = getopt.getopt(argv, "d:p:q:m:h", \
-        ["datadir=", "parser=", "parserdir=", "model_file=", "help"])
+                                   ["datadir=", "parser=", "parserdir=", "model_file=", "help"])
     except getopt.GetoptError:
-        usage('predict.py -d <datadir> -p <parser> -q <parserdir> -m <model_file> -h')
+        # usage('predict.py -d <datadir> -p <parser> -q <parserdir> -m <model_file> -h')
         sys.exit(2)
-    
+
     for opt, arg in opts:
         if opt == ("-h", "--help"):
-            usage('predict.py -d <datadir> -p <parser> -q <parserdir> -m <model_file> -h')
+            # usage('predict.py -d <datadir> -p <parser> -q <parserdir> -m <model_file> -h')
             sys.exit()
         elif opt in ("-d", "--datadir"):
             datadir = arg
@@ -64,32 +64,32 @@ def main(argv):
         elif opt in ("-m", "--model_file"):
             model_file = arg
 
-    print 'Data directory           :', datadir
-    print 'Running concept parser   :', parser
-    print 'Concept parser directory :', parserdir
-    print 'Location of model        :', model_file
-    
+    print('Data directory           :', datadir)
+    print('Running concept parser   :', parser)
+    print('Concept parser directory :', parserdir)
+    print('Location of model        :', model_file)
+
     feature_file = model_file.replace("/model-", "/feature-")
     encoder_file = model_file.replace("/model-", "/encoder-")
     vec_file = model_file.replace("/model-", "/vectorizer-")
     feat = re.sub(r"(.*model-f=)(.*)(-a=.*)", r"\2", model_file)
-    
+
     cwd = os.getcwd()
     os.system("mkdir cdc_tmp; mkdir cdc_tmp/data")
     workdir = cwd + "/cdc_tmp/"
     os.chdir(workdir)
 
     if os.path.exists(datadir) == False:
-        print "Please assign the data source"
+        print("Please assign the data source")
         sys.exit(2)
-        
+
     if os.path.isfile(datadir):
         os.system("mkdir tmp_data")
         dd = workdir + "tmp_data/"
         os.system("cp " + datadir + " " + dd)
         datadir = dd
-        
-    #if bool(re.compile('.*model_bow_[A-Za-z]+.pkl').match(model_file)):
+
+    # if bool(re.compile('.*model_bow_[A-Za-z]+.pkl').match(model_file)):
     if feat == "bow":
         Converter(workdir=workdir, folder=datadir, format="txt")
         df = pd.read_csv(workdir + 'data/data.txt', sep='\t')
@@ -97,32 +97,32 @@ def main(argv):
         X = pd.DataFrame(df['bow'])
         X.columns = ['concept']
         v = CountVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, \
-            vocabulary=cPickle.load(open(feature_file, "rb")))
+                            vocabulary=cPickle.load(open(feature_file, "rb")))
     else:
         if parser == "ctakes":
-            RunCtakes(folder=datadir, ctakesDir=parserdir, erisOne=None) 
+            RunCtakes(folder=datadir, ctakesDir=parserdir, erisOne=None)
             os.system('cd xml; find . -name "*.xml" -exec mv {} ' + workdir + 'data/ \;')
             Converter(workdir=workdir, folder=workdir + 'data/', format="xml")
             df = pd.read_csv(workdir + 'data/data.txt', sep='\t')
             df = df.sort_values(by='fname', ascending=True).reset_index(drop=True)
-            
+
             try:
                 X = pd.DataFrame(df[feat])
             except KeyError:
-                print "Feature combination"
+                print("Feature combination")
                 f_split = feat.split('_')
                 X = pd.DataFrame(df[f_split].apply(lambda x: ' '.join(x), axis=1))
             X.columns = ['concept']
             if feat == "bow":
                 v = CountVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, \
-                    vocabulary=cPickle.load(open(feature_file, "rb")))
+                                    vocabulary=cPickle.load(open(feature_file, "rb")))
             else:
                 v = CountVectorizer(stop_words=stopWords, \
-                    vocabulary=cPickle.load(open(feature_file, "rb")))
-    
-    print "Convert to sparse matrix"
+                                    vocabulary=cPickle.load(open(feature_file, "rb")))
+
+    print("Convert to sparse matrix")
     X = v.fit_transform(X.concept)
-    
+
     clf = cPickle.load(open(model_file, 'rb'))
     v = cPickle.load(open(vec_file, 'rb'))
     y_pred_prob = clf.predict_proba(X)
@@ -133,14 +133,14 @@ def main(argv):
 
     encoder = cPickle.load(open(encoder_file, 'rb'))
     result = pd.DataFrame(y_pred_prob)
-    result.columns = encoder.classes_ 
+    result.columns = encoder.classes_
     result['pred_class'] = encoder.inverse_transform(y_pred)
     result['fname'] = df['fname']
     result.to_csv(cwd + '/result.csv', sep="\t")
     print(result)
-        
+
     os.chdir(cwd)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    

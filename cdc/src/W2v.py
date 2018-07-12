@@ -76,8 +76,8 @@ def W2v(data, dimension=300, window=5, subsample=1e-5, concept=False, stem=False
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     sentences = [] 
     for item in data:
-        sentences += ToSentences(item, tokenizer, concept, stem, removeStopwords) 
-    print "w2v model training"
+        sentences += ToSentences(item, tokenizer, concept, stem, removeStopwords)
+    print("w2v model training")
     model = word2vec.Word2Vec(sentences, workers=4, size=dimension, min_count=1, \
         window=window, sample=subsample, sg=1, batch_words=1000)
     model.save_word2vec_format("w2v.mdl", binary=True)

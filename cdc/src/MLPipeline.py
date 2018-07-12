@@ -54,6 +54,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 from sklearn.utils import shuffle
+
 from sklearn.cross_validation import KFold, StratifiedKFold, cross_val_score, cross_val_predict
 from sklearn.multiclass import OneVsRestClassifier, OutputCodeClassifier
 from sklearn.linear_model import LinearRegression, Lasso, LogisticRegression, SGDClassifier
@@ -63,7 +64,7 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score, classification_report
-import cPickle
+import pickle as cPickle
 
 
 def multiclass_roc_auc_score(truth, pred, average="macro"):
@@ -88,9 +89,10 @@ def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, 
         next
     
     time_end = time.time() - time_model + tm
-    
-    print "Model: " + feature + ' | ' + str(algorithm) + ' | rep' + str(repeat+1) + ' | cv' + str(kfold+1) + ' | time: ' + str(time_end) + ' sec'
-    
+
+    print("Model: " + feature + ' | ' + str(algorithm) + ' | rep' + str(repeat + 1) + ' | cv' + str(
+        kfold + 1) + ' | time: ' + str(time_end) + ' sec')
+
     y_pred_prob = clf.predict_proba(X_test)
     try:
         y_pred = clf.predict(X_test)
@@ -110,8 +112,8 @@ def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, 
     acc = accuracy_score(y_test, y_pred)
     pr, re, f1, xx = precision_recall_fscore_support(y_test, y_pred, average='weighted') # didn't use 'macro'
     auc = multiclass_roc_auc_score(y_test, y_pred, average='weighted') # weighted AUC takes imbalanced label into account
-    print acc, pr, re, f1, auc
-    
+    print(acc, pr, re, f1, auc)
+
     metrics = pd.DataFrame([0])
     metrics['time'] = time_end
     metrics['accuracy'] = acc
@@ -179,8 +181,8 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     num_cores = multiprocessing.cpu_count()
 
     os.chdir(path + 'data/')
-    
-    print "--- Data preprocessing ---"
+
+    print("--- Data preprocessing ---")
     df = pd.read_csv(data, sep='\t')
     df = df.sort_values('fname', ascending=True).reset_index(drop=True)
     df['label'] = pd.read_csv(label, sep='\t', header=None)
@@ -188,7 +190,7 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     #    df.label[i] = re.sub(r"(.*)(.*)( \([0-9]+\).xml)", r"\1", df.fname.tolist()[i])
     y_unencoded = df.label
 
-    print "Label encoding"
+    print("Label encoding")
     encoder = LabelEncoder()
     encoder.fit(y_unencoded)
     y = encoder.transform(y_unencoded)
@@ -209,12 +211,12 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
                     best_score=best_score, feature=f, weighting='w2v', algorithm='cnn', repeat=rep, kfold=k)
                 
         else:
-            print "--- Vector representation ---"
-            
+            print("--- Vector representation ---")
+
             try:
                 X = pd.DataFrame(df[f])
             except KeyError:
-                print "Feature combination"
+                print("Feature combination")
                 f_split = f.split('_')
                 X = pd.DataFrame(df[f_split].apply(lambda x: ' '.join(x), axis=1))
                 
@@ -224,28 +226,28 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
             stemmer = PorterStemmer()
     
             if vec == 'freq':
-                print "One-hot representation"
+                print("One-hot representation")
                 if f == 'bow':
                     v = CountVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True)
                 else:
                     v = CountVectorizer(tokenizer=tokenize, stop_words=stopWords)
-                print "Convert to sparse matrix"
+                print("Convert to sparse matrix")
                 X = v.fit_transform(X.concept)
     
                 
             elif vec == 'tfidf':
-                print "Tf-idf representation"
+                print("Tf-idf representation")
                 if f == 'bow':
                     v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2', use_idf=True, \
                         smooth_idf=True, sublinear_tf=True)
                 else:
                     v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2', use_idf=True, \
                         smooth_idf=True, sublinear_tf=True)
-                print "Convert to sparse matrix"
+                print("Convert to sparse matrix")
                 X = v.fit_transform(X.concept)
             
             elif vec == 'pv':
-                print "Paragraph vector representation"
+                print("Paragraph vector representation")
                 if f == 'bow':
                     c, s, r = [False, True, True]
                 else:
@@ -263,12 +265,12 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
                 featureMatrix['order'] = pd.Categorical(featureMatrix.index, categories=df.fname.values.tolist(), ordered=True)
                 X = featureMatrix.sort_values('order')
                 del X['order']
-    
-            print str(X.shape)
-            
+
+            print(str(X.shape))
+
             time_feature = time.time() - time_start
-            
-            print "Feature selection (N)"
+
+            print("Feature selection (N)")
             #http://scikit-learn.org/stable/modules/feature_selection.html
             #http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LassoCV.html#sklearn.linear_model.LassoCV
             #http://stackoverflow.com/questions/14133348/show-feature-names-after-feature-selection
@@ -279,14 +281,13 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
             #lasso = SelectFromModel(LassoCV(cv=10)).fit(X, y)
             #X_new = lasso.transform(X)
             #X_new = pd.DataFrame(X_new, columns=np.asarray(vec.get_feature_names())[lasso.get_support()])
-            
-            
-            print "Topic modeling (N)"
+
+            print("Topic modeling (N)")
             #http://scikit-learn.org/stable/auto_examples/applications/topics_extraction_with_nmf_lda.html
-            
-            print "--- Supervised learning with repeated cross-validation ---"
-            print "input X, y, algorithm, rep, k"
-            
+
+            print("--- Supervised learning with repeated cross-validation ---")
+            print("input X, y, algorithm, rep, k")
+
             alg_num = xrange(len(alg_list))
             
             for a in alg_list:
@@ -329,4 +330,4 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     #score_table = pd.read_csv(path + 'result/' + vec + '_' + alg + '_'+ cwt + '_' + feature + '_' + str(rep) + '_' + str(k) + '_score.txt', sep='\t')
     pred_table.to_csv(path + 'result/' + vec + '_' + alg + '_'+ cwt + '_' + feature + '_' + str(rep) + '_' + str(k) + '_pred.txt', sep='\t')
     #pred_table = pd.read_csv(path + 'result/' + vec + '_' + alg + '_'+ cwt + '_' + feature + '_' + str(rep) + '_' + str(k) + '_pred.txt', sep='\t')
-    print best_coef
+    print(best_coef)
