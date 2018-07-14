@@ -43,8 +43,8 @@ from nltk.stem.porter import PorterStemmer
 stemmer = PorterStemmer()
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from D2v import *
-from Dnn import *
+from cdc.src.D2v import *
+from cdc.src.Dnn import *
 
 from sklearn.feature_selection import SelectKBest, SelectFromModel, GenericUnivariateSelect
 from sklearn.feature_selection import chi2
@@ -288,11 +288,11 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
             print("--- Supervised learning with repeated cross-validation ---")
             print("input X, y, algorithm, rep, k")
 
-            alg_num = xrange(len(alg_list))
+            alg_num = range(len(alg_list))
             
             for a in alg_list:
                 
-                for i in xrange(rep):
+                for i in range(rep):
                     #X, y = shuffle(X, y, random_state=42)
                     
                     #kf = KFold(len(y), n_folds=k, shuffle=True, random_state=None)

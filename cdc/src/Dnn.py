@@ -50,7 +50,7 @@ from sklearn.cross_validation import train_test_split, StratifiedKFold
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score, classification_report
 from sklearn.preprocessing import LabelBinarizer
 
-from W2v import *
+from cdc.src.W2v import *
 
 
 def multiclass_roc_auc_score(truth, pred, average="macro"):
