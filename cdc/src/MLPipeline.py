@@ -158,23 +158,33 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     else:
         class_wt = None
 
-    alg_abbreviation = ['l1', 'l2', 'nb', 'svmlin', 'svmsgd', 'svmrbf', 'rf', 'adaboost', \
-        'mlp_lbfgs','mlp_sgd','mlp_adam', 'dnn']
-    alg_list = [\
-        LogisticRegression(penalty='l1', multi_class='ovr', class_weight=class_wt, n_jobs=-1), \
-        LogisticRegression(penalty='l2', multi_class='ovr', class_weight=class_wt, n_jobs=-1), \
-        MultinomialNB(), \
-        #SVC(kernel='linear', probability=True, decision_function_shape='ovr', class_weight=class_wt), \
-        CalibratedClassifierCV(base_estimator=LinearSVC(penalty='l2', loss='squared_hinge', C=1.0, multi_class='ovr', class_weight=class_wt, random_state=0, max_iter=1000), cv=5), \
-        CalibratedClassifierCV(base_estimator=SGDClassifier(loss='hinge', penalty='l2', alpha=0.0001, l1_ratio=0.15, fit_intercept=True, max_iter=5, shuffle=True, epsilon=0.1, n_jobs=-1, random_state=0, learning_rate='optimal', eta0=0.0, power_t=0.5, class_weight=class_wt), cv=5), \
-        SVC(kernel='rbf', probability=True, decision_function_shape='ovr', class_weight=class_wt), \
-        RandomForestClassifier(n_estimators=100, class_weight=class_wt, n_jobs=-1), \
-        AdaBoostClassifier(n_estimators=100), \
-        #GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0)] # GBM can't use sparse matrix, scikit-learn problem
-        MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42), \
-        MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42), \
-        MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42), \
-        'dnn']
+    alg_abbreviation = []
+    alg_list=[]
+    alg_abbreviation.append('l1')
+    alg_list.append(LogisticRegression(penalty='l1', multi_class='ovr', class_weight=class_wt, n_jobs=-1))
+    alg_abbreviation.append('l2')
+    alg_list.append(LogisticRegression(penalty='l2', multi_class='ovr', class_weight=class_wt, n_jobs=-1))
+    alg_abbreviation.append('nb')
+    alg_list.append(MultinomialNB())
+    alg_abbreviation.append('svmlin')
+    alg_list.append(SVC(kernel='linear', probability=True, decision_function_shape='ovr', class_weight=class_wt))
+    alg_abbreviation.append('svmsgd')
+    alg_list.append(CalibratedClassifierCV(base_estimator=LinearSVC(penalty='l2', loss='squared_hinge', C=1.0, multi_class='ovr', class_weight=class_wt, random_state=0, max_iter=1000), cv=5))
+    # alg_abbreviation.append('svmrbf')
+    # alg_list.append(CalibratedClassifierCV(base_estimator=SGDClassifier(loss='hinge', penalty='l2', alpha=0.0001, l1_ratio=0.15, fit_intercept=True, max_iter=5, shuffle=True, epsilon=0.1, n_jobs=-1, random_state=0, learning_rate='optimal', eta0=0.0, power_t=0.5, class_weight=class_wt), cv=5))
+    alg_abbreviation.append('rf')
+    alg_list.append(RandomForestClassifier(n_estimators=100, class_weight=class_wt, n_jobs=-1))
+    # alg_abbreviation.append('adaboost')
+    # alg_list.append(AdaBoostClassifier(n_estimators=100))
+    # alg_abbreviation.append('mlp_lbfgs')
+    # alg_list.append(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42))
+    # alg_abbreviation.append('mlp_sgd')
+    # alg_list.append(MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42))
+    # alg_abbreviation.append('mlp_adam')
+    # alg_list.append(MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(128, 64, 32), random_state=42))
+    # alg_abbreviation.append('dnn')
+    # alg_list.append()
+    # SVC(kernel='rbf', probability=True, decision_function_shape='ovr', class_weight=class_wt)
             
     a = alg.split('+')
     alg_list = [alg_list[alg_abbreviation.index(i)] for i in a]
