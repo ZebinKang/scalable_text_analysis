@@ -37,9 +37,11 @@ from sklearn.preprocessing import LabelEncoder, LabelBinarizer, label_binarize
 
 import string
 from nltk.corpus import stopwords
+
 stopWords = stopwords.words('english')
-from nltk import word_tokenize          
+from nltk import word_tokenize
 from nltk.stem.porter import PorterStemmer
+
 stemmer = PorterStemmer()
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -73,32 +75,36 @@ def multiclass_roc_auc_score(truth, pred, average="macro"):
     truth = lb.transform(truth)
     pred = lb.transform(pred)
     return roc_auc_score(truth, pred, average=average)
-    
-	           
-def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, X_test, y_test, repeat=0, kfold=0, tm=0.):
-    
-    time_model = time.time()
-    
+
+
+def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, X_test, y_test, repeat=0, kfold=0,
+             tm=0.):
+    training_start_time = time.time()
+
     best_model = best_feature = best_algorithm = best_coef = ''
     coef = ''
-    
+
     clf = OneVsRestClassifier(algorithm).fit(X_train, y_train)
     try:
         coef = clf.estimators_.feature_importances_
     except:
         next
-    
-    time_end = time.time() - time_model + tm
 
-    print("Model: " + feature + ' | ' + str(algorithm) + ' | rep' + str(repeat + 1) + ' | cv' + str(
-        kfold + 1) + ' | time: ' + str(time_end) + ' sec')
+    training_time = time.time() - training_start_time + tm
 
+    classification_start_time = time.time()
     y_pred_prob = clf.predict_proba(X_test)
     try:
         y_pred = clf.predict(X_test)
     except TypeError:
         y_pred = clf.predict(X_test.values)
-    
+
+    classification_time = time.time() - classification_start_time
+
+    print("Model: " + feature + ' | ' + str(algorithm) + ' | rep' + str(repeat + 1) + ' | cv' + str(
+        kfold + 1) + ' | training time: ' + str(training_time) + ' sec' + ' | classification time: ' + str(
+        classification_time) + ' sec')
+
     t = pd.concat([pd.DataFrame(y_test), pd.DataFrame(y_pred)], axis=1)
     t.columns = ['true', 'pred']
     pred_tbl = pd.DataFrame(y_pred_prob, columns=list(clf.classes_))
@@ -108,14 +114,16 @@ def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, 
     pred_tbl['algorithm'] = str(algorithm)
     pred_tbl['feature'] = feature
     pred_tbl['weighting'] = weighting
-    
+
     acc = accuracy_score(y_test, y_pred)
-    pr, re, f1, xx = precision_recall_fscore_support(y_test, y_pred, average='weighted') # didn't use 'macro'
-    auc = multiclass_roc_auc_score(y_test, y_pred, average='weighted') # weighted AUC takes imbalanced label into account
+    pr, re, f1, xx = precision_recall_fscore_support(y_test, y_pred, average='weighted')  # didn't use 'macro'
+    auc = multiclass_roc_auc_score(y_test, y_pred,
+                                   average='weighted')  # weighted AUC takes imbalanced label into account
     print(acc, pr, re, f1, auc)
 
     metrics = pd.DataFrame([0])
-    metrics['time'] = time_end
+    metrics['training time'] = training_time
+    metrics['classification time'] = classification_time
     metrics['accuracy'] = acc
     metrics['precision'] = pr
     metrics['recall'] = re
@@ -126,17 +134,17 @@ def modeling(path, best_score, feature, algorithm, weighting, X_train, y_train, 
     metrics['algorithm'] = str(algorithm)
     metrics['feature'] = feature
     metrics['weighting'] = weighting
-    
+
     if auc > best_score:
         best_model = clf
         best_score = auc
         best_feature = feature
         best_algorithm = str(algorithm)[0:9]
         best_coef = coef
-    
+
     return best_model, best_feature, best_algorithm, best_coef, pred_tbl, metrics
-        
-        
+
+
 def stem_tokens(tokens, stemmer):
     stemmed = []
     for item in tokens:
@@ -150,8 +158,8 @@ def tokenize(text):
     output = [i for i in tokens if i not in string.punctuation and not re.match("^[0-9.].*$", i) and len(i) > 2]
     output = stem_tokens(output, stemmer)
     return output
-    
-    
+
+
 def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     if cwt == 'balanced':
         class_wt = cwt
@@ -159,7 +167,7 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
         class_wt = None
 
     alg_abbreviation = []
-    alg_list=[]
+    alg_list = []
     alg_abbreviation.append('l1')
     alg_list.append(LogisticRegression(penalty='l1', multi_class='ovr', class_weight=class_wt, n_jobs=-1))
     alg_abbreviation.append('l2')
@@ -185,7 +193,7 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     # alg_abbreviation.append('dnn')
     # alg_list.append()
     # SVC(kernel='rbf', probability=True, decision_function_shape='ovr', class_weight=class_wt)
-            
+
     a = alg.split('+')
     alg_list = [alg_list[alg_abbreviation.index(i)] for i in a]
     num_cores = multiprocessing.cpu_count()
@@ -196,7 +204,7 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     df = pd.read_csv(data, sep='\t')
     df = df.sort_values('fname', ascending=True).reset_index(drop=True)
     df['label'] = pd.read_csv(label, sep='\t', header=None)
-    #for i in xrange(len(df.fname.tolist())):
+    # for i in xrange(len(df.fname.tolist())):
     #    df.label[i] = re.sub(r"(.*)(.*)( \([0-9]+\).xml)", r"\1", df.fname.tolist()[i])
     y_unencoded = df.label
 
@@ -208,18 +216,19 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
     pred_table = pd.DataFrame()
     score_table = pd.DataFrame()
     best_score = 0
-    
+
     ff = feature.split('+')
-    
+
     for f in ff:
-        
+
         time_start = time.time()
-        
+
         if alg == 'dnn':
             best_model, best_feature, best_algorithm, best_coef, score_table, pred_table, metrics = \
-                Dnn(df=df, y=y, encoder=encoder, class_wt=False, trained_w2v='umls', batch_size=int(df.shape[0]/100), n_epoch=25, \
+                Dnn(df=df, y=y, encoder=encoder, class_wt=False, trained_w2v='umls', batch_size=int(df.shape[0] / 100),
+                    n_epoch=25, \
                     best_score=best_score, feature=f, weighting='w2v', algorithm='cnn', repeat=rep, kfold=k)
-                
+
         else:
             print("--- Vector representation ---")
 
@@ -229,12 +238,12 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
                 print("Feature combination")
                 f_split = f.split('_')
                 X = pd.DataFrame(df[f_split].apply(lambda x: ' '.join(x), axis=1))
-                
+
             X.columns = ['concept']
-            
+
             stopWords = stopwords.words('english')
             stemmer = PorterStemmer()
-    
+
             if vec == 'freq':
                 print("One-hot representation")
                 if f == 'bow':
@@ -243,36 +252,41 @@ def MLPipeline(path, data, label, vec, alg, cwt, feature, rep, k):
                     v = CountVectorizer(tokenizer=tokenize, stop_words=stopWords)
                 print("Convert to sparse matrix")
                 X = v.fit_transform(X.concept)
-    
-                
+
+
             elif vec == 'tfidf':
                 print("Tf-idf representation")
                 if f == 'bow':
-                    v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2', use_idf=True, \
-                        smooth_idf=True, sublinear_tf=True)
+                    v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2',
+                                        use_idf=True, \
+                                        smooth_idf=True, sublinear_tf=True)
                 else:
-                    v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2', use_idf=True, \
-                        smooth_idf=True, sublinear_tf=True)
+                    v = TfidfVectorizer(tokenizer=tokenize, stop_words=stopWords, lowercase=True, norm='l2',
+                                        use_idf=True, \
+                                        smooth_idf=True, sublinear_tf=True)
                 print("Convert to sparse matrix")
                 X = v.fit_transform(X.concept)
-            
+
             elif vec == 'pv':
                 print("Paragraph vector representation")
                 if f == 'bow':
                     c, s, r = [False, True, True]
                 else:
                     c, s, r = [True, False, False]
-                    
-                try: 
+
+                try:
                     model, featureMatrix = D2v(data=df[f], fnames=df['fname'].values.tolist(), \
-                        dimension=600, window=10, subsample=1e-5, concept=c, stem=s, removeStopwords=r)
+                                               dimension=600, window=10, subsample=1e-5, concept=c, stem=s,
+                                               removeStopwords=r)
                 except KeyError:
                     d2v_input = f.split('_')
                     d2v_input = pd.DataFrame(df[d2v_input].apply(lambda x: ' '.join(x), axis=1))
                     model, featureMatrix = D2v(data=d2v_input[0], fnames=df['fname'].values.tolist(), \
-                        dimension=600, window=10, subsample=1e-5, concept=c, stem=s, removeStopwords=r)
-                    
-                featureMatrix['order'] = pd.Categorical(featureMatrix.index, categories=df.fname.values.tolist(), ordered=True)
+                                               dimension=600, window=10, subsample=1e-5, concept=c, stem=s,
+                                               removeStopwords=r)
+
+                featureMatrix['order'] = pd.Categorical(featureMatrix.index, categories=df.fname.values.tolist(),
+                                                        ordered=True)
                 X = featureMatrix.sort_values('order')
                 del X['order']
 
